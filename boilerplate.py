@@ -100,16 +100,38 @@ def epsilon_greedy(bandit, T, epsilon=0.1):
 #     return np.array(rewards), np.array(regrets)
 
 
-# # Thompson Sampling
-# def thompson_sampling(bandit, T):
+# Thompson Sampling
+def thompson_sampling(bandit, T):
 
-#     #Initialize algorithm dependent variable here
-#     rewards, regrets = [], []
-#     cumulative_regret = 0
+    #Initialize algorithm dependent variable here
+    K = bandit.K
+    rewards, regrets = [], []
+    beta_distributions = [] #beta distributions of each arms
+    no_of_pulls_per_arm = [0] * K # total no of pulls made by each arm
+    total_arm_rewards = [0] * K # total rewards obtained by each arm
+    cumulative_regret = 0
 
-#     for t in range(T):
+    for arm in range(K):
+        beta_distributions.append(np.random.beta(1,1,size=1))
 
-#     return np.array(rewards), np.array(regrets)
+    for t in range(T):
+        opt_arm = np.argmax(beta_distributions)
+        no_of_pulls_per_arm[opt_arm]+=1
+        rewards.append(bandit.pull(opt_arm))
+        total_arm_rewards[opt_arm] += rewards[-1]
+        regrets.append(abs(bandit.best_mean-beta_distributions[opt_arm])*(no_of_pulls_per_arm[opt_arm]/(t+1)))
+        cumulative_regret += regrets[-1]
+        a = total_arm_rewards[opt_arm]
+        b = no_of_pulls_per_arm[opt_arm] - a
+        if(a <= 0 or b<= 0):
+            if(a<=0):
+                a=1
+            else:
+                b=1
+        beta_distributions[opt_arm] = np.random.beta(a,b,size=1)
+
+
+    return np.array(rewards), np.array(regrets)
 
 # ──────────────────────────────────────────────
 # Run & Plot
@@ -121,7 +143,7 @@ def run_experiment(means, T, n_runs):
         "Eps-Greedy(0.1)":   lambda b, T: epsilon_greedy(b, T, epsilon=0.1),
         # "UCB1":              ucb1,
         # "KL-UCB":            kl_ucb,
-        # "Thompson Sampling": thompson_sampling,
+        "Thompson Sampling": thompson_sampling,
     }
     results = {name: [] for name in algorithms}
 
@@ -134,7 +156,7 @@ def run_experiment(means, T, n_runs):
             results[name].append(regret)
 
     # Average over runs
-    print(results["Eps-Greedy(0.1)"])
+    
     # ── Plot 1: Cumulative Regret Line Chart ──
     
 
