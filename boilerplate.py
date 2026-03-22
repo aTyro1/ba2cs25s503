@@ -24,7 +24,7 @@ def greedy(bandit, T):
     no_of_pulls_per_arm = [] #no of pulls made by each arm
     total_arm_rewards=[] #total rewards of each arm
     cumulative_regret = 0
-    cummulative_regret_per_time_stamp = []
+    cummulative_regret_per_time_stamp = [] #cumulative regret per time stamp
 
     # Initialise: pull each arm once
     for arm in range(K):
@@ -58,7 +58,7 @@ def epsilon_greedy(bandit, T, epsilon=0.1):
     no_of_pulls_per_arm = [] #no of pulls made by each arm
     total_arm_rewards=[] #total rewards of each arm
     cumulative_regret = 0
-    cummulative_regret_per_time_stamp = []
+    cummulative_regret_per_time_stamp = [] #cumulative regret per time stamp
 
     # Initialise: pull each arm once
     for arm in range(K):
@@ -99,8 +99,8 @@ def ucb1(bandit, T):
     no_of_pulls_per_arm = [] #no of pulls made by each arm
     total_arm_rewards=[] #total rewards of each arm
     cumulative_regret = 0
-    cummulative_regret_per_time_stamp = []
-    calculated_em = []
+    cummulative_regret_per_time_stamp = [] #cumulative regret per time stamp
+    calculated_em = [] #calculated emipircal means
 
     # Pull each arm once
     for arm in range(K):
@@ -134,11 +134,11 @@ def thompson_sampling(bandit, T):
     no_of_pulls_per_arm = [0] * K # total no of pulls made by each arm
     total_arm_rewards = [0] * K # total rewards obtained by each arm
     cumulative_regret = 0
-    cummulative_regret_per_time_stamp = []
-    empirical_means=[0,0,0,0,0]
+    cummulative_regret_per_time_stamp = [] #cumulative regret per time stamp
+    empirical_means=[0,0,0,0,0] #empirical means
 
     for arm in range(K):
-        beta_distributions.append(np.random.beta(1,1,size=1))
+        beta_distributions.append(np.random.beta(1,1,size=1)[0])
 
     for t in range(T):
         opt_arm = np.argmax(beta_distributions)
@@ -148,16 +148,19 @@ def thompson_sampling(bandit, T):
         empirical_means[opt_arm] = total_arm_rewards[opt_arm]/(no_of_pulls_per_arm[opt_arm])
         regrets.append(abs(bandit.best_mean-empirical_means[opt_arm])*(no_of_pulls_per_arm[opt_arm]/(t+1)))
         cumulative_regret += regrets[-1]
-        a = total_arm_rewards[opt_arm]
-        b = no_of_pulls_per_arm[opt_arm] - a
-        if(a <= 0 or b<= 0):
-            if(a<=0):
-                a=1
-            else:
-                b=1
-        beta_distributions[opt_arm] = np.random.beta(a,b,size=1)
+        for arm in range(K):
+            a = total_arm_rewards[arm]
+            b = no_of_pulls_per_arm[arm] - a
+            if(a <= 0 or b<= 0):
+                if(a<=0 and b<=0):
+                    a=1
+                    b=1
+                if(b<=0):
+                    b=1
+                if(a<=0):
+                    a=1
+        beta_distributions[opt_arm] = np.random.beta(a,b,size=1)[0]
         cummulative_regret_per_time_stamp.append(cumulative_regret)
-
 
 
     return np.array(rewards), np.array(regrets),cummulative_regret_per_time_stamp
@@ -192,8 +195,8 @@ def kl_ucb(bandit,T):
     empirical_means = [] #empirical means of arms
     no_of_pulls_per_arm = [] #no of pulls made by each arm
     total_arm_rewards=[] #total rewards of each arm
-    cumulative_regret = 0
-    cummulative_regret_per_time_stamp = []
+    cumulative_regret = 0 #cumulative regret 
+    cummulative_regret_per_time_stamp = [] #cumulative regret per time stamp
 
 
     # Pull each arm once
@@ -248,17 +251,27 @@ def run_experiment(means, T, n_runs):
     # ── Plot 1: Cumulative Regret Line Chart ──
     
     X = np.linspace(0,T,T)
-    plt.plot(X,avg_cummulative_regrets['Greedy'],label="Greedy",marker='.')
-    plt.plot(X,avg_cummulative_regrets['Eps-Greedy(0.1)'],label="Eps-Greedy",marker=',')
-    plt.plot(X,avg_cummulative_regrets['UCB1'],label="UCB1",marker='--')
-    plt.plot(X,avg_cummulative_regrets['KL-UCB'],label="kl-ucb",marker='|')
-    plt.plot(X,avg_cummulative_regrets['Thompson Sampling'],label="TS")
-    plt.xlabel("Time step (t)")
-    plt.ylabel("Cumulative Regret")
-    plt.title("Cumulative regret vs time steps (t)")
-    plt.show()
-    plt.savefig('./plot1.txt')    
+    # plt.plot(X,avg_cummulative_regrets['Greedy'],label="Greedy",marker='.')
+    # plt.plot(X,avg_cummulative_regrets['Eps-Greedy(0.1)'],label="Eps-Greedy",marker=',')
+    # plt.plot(X,avg_cummulative_regrets['UCB1'],label="UCB1",marker='--')
+    # plt.plot(X,avg_cummulative_regrets['KL-UCB'],label="kl-ucb",marker='|')
+    # plt.plot(X,avg_cummulative_regrets['Thompson Sampling'],label="TS")
+    # plt.xlabel("Time step (t)")
+    # plt.ylabel("Cumulative Regret")
+    # plt.title("Cumulative regret vs time steps (t)")
+    # plt.show() 
+    # plt.savefig('./plot1.txt')
     # ── Plot 2: Final Average Regret Bar Chart ──
+    plt.plot(X,avg_regrets['Greedy'],label='Greedy', marker='.')
+    plt.plot(X,avg_regrets['Eps-Greedy(0.1)'],label='Eps-Greedy', marker=',')
+    plt.plot(X,avg_regrets['UCB1'],label='UCB1',marker='--')
+    plt.plot(X,avg_regrets['KL-UCB'],label='kl-ucb',marker='|')
+    plt.plot(X,avg_regrets['Thompson Sampling'],label='tS')
+    plt.xlabel("Time Step (t)")
+    plt.ylabel("average regret")
+    plt.title('Average regret vs time steps (t)')
+    plt.show()
+    plt.savefig('./plot2.txt')
   
 
 
@@ -267,5 +280,5 @@ if __name__ == "__main__":
     np.random.seed(42)
     MEANS = [0.1, 0.3, 0.5, 0.6, 0.9]   # 5-armed bandit, best arm = 0.9
     T     = 10000
-    RUNS  = 1
+    RUNS  = 50 #try to reduce the no of runs as kl-ucb is taking more running time because it needs to go over all the elements in set [0,1] for each K in each T of each run
     run_experiment(MEANS, T, RUNS)
